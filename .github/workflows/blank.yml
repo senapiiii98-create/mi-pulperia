@@ -17,7 +17,7 @@ jobs:
         cp -r project_root/PulperiaLaNegrita_Android/PulperiaLaNegrita_Android/* . 2>/dev/null || true
         cp -r project_root/PulperiaLaNegrita_Android/PulperiaLaNegrita_Android/.[!.]* . 2>/dev/null || true
         
-        # Eliminar configuraciones viejas y la interfaz dañada para inyectar las corregidas
+        # Eliminar configuraciones viejas y la interfaz dañada
         find . -name "build.gradle" -delete
         find . -name "build.gradle.kts" -delete
         find . -name "settings.gradle" -delete
@@ -32,7 +32,7 @@ jobs:
         include ':app'
         EOF
 
-        # 2. Crear build.gradle principal estable
+        # 2. Crear build.gradle principal estable (CORREGIDO)
         cat << 'EOF' > build.gradle
         buildscript {
             repositories {
@@ -41,7 +41,7 @@ jobs:
             }
             dependencies {
                 classpath "com.android.tools.build:gradle:8.2.2"
-                classpath "org.jetbrains.uuid:kotlin-gradle-plugin:1.8.22" || classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.22"
+                classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.22"
             }
         }
         allprojects {
@@ -118,11 +118,10 @@ jobs:
 
     - name: Force Rewrite Layout File with Correct Space Tag
       run: |
-        # Re-crear el archivo visual de la pantalla solucionando la etiqueta <Space> de ChatGPT
         mkdir -p app/src/main/res/layout
         cat << 'EOF' > app/src/main/res/layout/main.xml
         <?xml version="1.0" encoding="utf-8"?>
-        <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        <LinearLayout xmlns:android="http://android.com"
             android:orientation="vertical" android:padding="20dp"
             android:layout_width="match_parent" android:layout_height="match_parent">
 
