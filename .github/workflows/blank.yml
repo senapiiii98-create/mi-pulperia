@@ -13,10 +13,7 @@ jobs:
     - name: Unzip Clean Project Structure
       run: |
         sudo apt-get update && sudo apt-get install -y unzip
-        # Descomprimir directo en una carpeta limpia
         unzip -o *.zip -d project_root || true
-        
-        # Mover los archivos de la doble carpeta directamente usando la ruta que ya conocemos
         cp -r project_root/PulperiaLaNegrita_Android/PulperiaLaNegrita_Android/* . 2>/dev/null || true
         cp -r project_root/PulperiaLaNegrita_Android/PulperiaLaNegrita_Android/.[!.]* . 2>/dev/null || true
 
