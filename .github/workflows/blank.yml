@@ -1,41 +1,4 @@
-name: Compile Clean APK
-on:
-  push:
-    branches: [ "main", "master", "principal" ]
-  workflow_dispatch:
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Unzip Clean Project Structure
-      run: |
-        sudo apt-get update && sudo apt-get install -y unzip
-        unzip -o *.zip -d project_root || true
-        cp -r project_root/PulperiaLaNegrita_Android/PulperiaLaNegrita_Android/* . 2>/dev/null || true
-        cp -r project_root/PulperiaLaNegrita_Android/PulperiaLaNegrita_Android/.[!.]* . 2>/dev/null || true
-
-    - name: Setup Java 17
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '17'
-
-    - name: Setup Gradle 8.9
-      uses: gradle/actions/setup-gradle@v4
-      with:
-        gradle-version: '8.9'
-
-    - name: Build Android APK
-      run: |
-        gradle clean assembleDebug --no-daemon
-
-    - name: Upload Finished APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: PulperiaLaNegrita-debug
-        path: |
-          app/build/outputs/apk/debug/app-debug.apk
-          **/build/outputs/apk/debug/*.apk
+plugins {
+    id("com.android.application") version "8.7.3" apply false
+    id("org.jetbrains.kotlin.android") version "2.0.21" apply false
+}
