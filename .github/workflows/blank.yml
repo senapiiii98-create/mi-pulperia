@@ -1,4 +1,4 @@
-name: Compile APK Final
+name: Compile APK Modern
 on:
   push:
     branches: [ "main", "master", "principal" ]
@@ -14,33 +14,30 @@ jobs:
       run: |
         sudo apt-get update && sudo apt-get install -y unzip
         unzip -o *.zip -d extracted_data || true
-        # Si los archivos se extrajeron en una subcarpeta, los mueve a la raiz
         if [ -f "extracted_data/settings.gradle.kts" ]; then
           cp -r extracted_data/* . 2>/dev/null || true
           cp -r extracted_data/.[!.]* . 2>/dev/null || true
         fi
 
-    - name: Setup Java
+    - name: Setup Java 17 (Required)
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Accept Android Licenses Automatically
-      run: |
-        mkdir -p $ANDROID_HOME/licenses
-        echo "24a33b3b76716ec83b8214b904d5102595450a31" > $ANDROID_HOME/licenses/android-sdk-license
-        echo "84831b9409646a918e30573bab4c9c91346d8abd" > $ANDROID_HOME/licenses/android-sdk-preview-license
+    - name: Setup Gradle 8.9 (Required)
+      uses: gradle/actions/setup-gradle@v4
+      with:
+        gradle-version: '8.9'
 
-    - name: Build APK smoothly
+    - name: Build Android APK
       run: |
-        sudo apt-get update && sudo apt-get install -y gradle
-        gradle assembleDebug --no-daemon --stacktrace
+        gradle clean assembleDebug --no-daemon
 
     - name: Upload Finished APK
       uses: actions/upload-artifact@v4
       with:
-        name: pulperia-apk
+        name: PulperiaLaNegrita-debug
         path: |
           app/build/outputs/apk/debug/app-debug.apk
           **/build/outputs/apk/debug/*.apk
