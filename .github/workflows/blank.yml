@@ -1,4 +1,4 @@
-name: Compilar APK desde ZIP
+name: Compilar APK Final de la Pulperia
 
 on:
   push:
@@ -11,23 +11,38 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Preparar y Descomprimir Proyecto
+    - name: Extraer e instalar herramientas de descompresion
       run: |
-        sudo apt-get update && sudo apt-get install -y unzip
-        unzip -o *.zip -d extracted_project || unzip -o PulperiaLaNegrita_Android.zip -d extracted_project
-        TARGET_DIR=$(find extracted_project -name "settings.gradle.kts" -o -name "settings.gradle" -exec dirname {} \; | head -n 1)
-        echo "Proyecto localizado en: $TARGET_DIR"
-        cp -r $TARGET_DIR/* . 2>/dev/null || true
-        cp -r $TARGET_DIR/.[!.]* . 2>/dev/null || true
+        sudo apt-get update
+        sudo apt-get install -y unzip
+        unzip -o *.zip
 
-    - name: Configurar Entorno Java Correcto
+    - name: Acomodar archivos de la doble carpeta
+      run: |
+        # Este comando busca la carpeta interna real donde estan las configuraciones de gradle
+        REAL_DIR=$(find . -name "settings.gradle.kts" -exec dirname {} \; | head -n 1)
+        echo "La ruta real del proyecto es: $REAL_DIR"
+        
+        # Movemos de forma forzada todo a la raiz del servidor para que compile bien
+        cp -r $REAL_DIR/* . 2>/dev/null || true
+        cp -r $REAL_DIR/.[!.]* . 2>/dev/null || true
+
+    - name: Instalar el entorno Java oficial
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: '17'
-        cache: 'gradle'
 
-    - name: Validar y Ejecutar Compilacion
+    - name: Forzar construccion e instalar Gradle nativo
       run: |
-        chmod +x gradlew || true
-        ./gradlew assembleDebug --no-daemon --stacktrace || gradle assembleDebug --no-daemon
+        gradle wrapper
+        chmod +x gradlew
+        ./gradlew assembleDebug --no-daemon
+
+    - name: Subir el archivo APK listo para descargar
+      uses: actions/upload-artifact@v4
+      with:
+        name: pulperia-apk
+        path: |
+          app/build/outputs/apk/debug/app-debug.apk
+          **/build/outputs/apk/debug/*.apk
