@@ -11,34 +11,23 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Descomprimir y Buscar Proyecto
+    - name: Preparar y Descomprimir Proyecto
       run: |
-        unzip PulperiaLaNegrita_Android.zip -d extracted_project || unzip *.zip -d extracted_project
-        
-        # Buscar la ruta exacta donde se encuentra el archivo settings.gradle.kts
-        TARGET_DIR=$(find extracted_project -name "settings.gradle.kts" -exec dirname {} \;)
-        echo "Proyecto encontrado en: $TARGET_DIR"
-        
-        # Mover todo el contenido de esa carpeta a la raíz del servidor
-        mv $TARGET_DIR/* . 2>/dev/null || true
-        mv $TARGET_DIR/.[!.]* . 2>/dev/null || true
+        sudo apt-get update && sudo apt-get install -y unzip
+        unzip -o *.zip -d extracted_project || unzip -o PulperiaLaNegrita_Android.zip -d extracted_project
+        TARGET_DIR=$(find extracted_project -name "settings.gradle.kts" -o -name "settings.gradle" -exec dirname {} \; | head -n 1)
+        echo "Proyecto localizado en: $TARGET_DIR"
+        cp -r $TARGET_DIR/* . 2>/dev/null || true
+        cp -r $TARGET_DIR/.[!.]* . 2>/dev/null || true
 
-    - name: Configurar Java 17
+    - name: Configurar Entorno Java Correcto
       uses: actions/setup-java@v4
       with:
-        distribution: 'zulu'
+        distribution: 'temurin'
         java-version: '17'
+        cache: 'gradle'
 
-    - name: Dar permisos a Gradle
-      run: chmod +x gradlew || true
-
-    - name: Compilar APK con Gradle
-      run: ./gradlew assembleDebug || gradle assembleDebug
-
-    - name: Subir APK Generado
-      uses: actions/upload-artifact@v4
-      with:
-        name: pulperia-apk
-        path: |
-          app/build/outputs/apk/debug/app-debug.apk
-          **/build/outputs/apk/debug/*.apk
+    - name: Validar y Ejecutar Compilacion
+      run: |
+        chmod +x gradlew || true
+        ./gradlew assembleDebug --no-daemon --stacktrace || gradle assembleDebug --no-daemon
