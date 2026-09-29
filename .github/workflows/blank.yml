@@ -17,9 +17,9 @@ jobs:
         cp -r project_root/PulperiaLaNegrita_Android/PulperiaLaNegrita_Android/* . 2>/dev/null || true
         cp -r project_root/PulperiaLaNegrita_Android/PulperiaLaNegrita_Android/.[!.]* . 2>/dev/null || true
 
-    - name: Force Rewrite Corrupted Gradle Files
+    - name: Force Rewrite Gradle Files with Compatibility Strategy
       run: |
-        # Forzar la reescritura del archivo build.gradle.kts principal
+        # Reescribir el archivo build.gradle.kts principal
         cat << 'EOF' > build.gradle.kts
         plugins {
             id("com.android.application") version "8.7.3" apply false
@@ -27,7 +27,7 @@ jobs:
         }
         EOF
 
-        # Forzar la reescritura del archivo app/build.gradle.kts interno con dependencias estables
+        # Reescribir app/build.gradle.kts forzando la resolucion de librerias de transicion
         mkdir -p app
         cat << 'EOF' > app/build.gradle.kts
         plugins {
@@ -71,6 +71,13 @@ jobs:
                 resources {
                     excludes += "/META-INF/{AL2.0,LGPL2.1}"
                 }
+            }
+        }
+
+        configurations.all {
+            resolutionStrategy {
+                // Forzar el uso de la version de transiciones compatible para evitar el choque con Material
+                force("androidx.transition:transition:1.5.0")
             }
         }
 
