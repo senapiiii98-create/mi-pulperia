@@ -8,21 +8,17 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: Free Disk Space
-      run: |
-        sudo rm -rf /usr/share/dotnet
-        sudo rm -rf /usr/local/lib/android
-        sudo rm -rf /opt/ghc
-
     - uses: actions/checkout@v4
 
-    - name: Unzip project
+    - name: Unzip clean project
       run: |
         sudo apt-get update && sudo apt-get install -y unzip
-        unzip -o *.zip -d extracted_data
-        REAL_PATH=$(find extracted_data -name "settings.gradle.kts" -o -name "settings.gradle" -exec dirname {} \; | head -n 1)
-        cp -r $REAL_PATH/* . 2>/dev/null || true
-        cp -r $REAL_PATH/.[!.]* . 2>/dev/null || true
+        unzip -o *.zip -d extracted_data || true
+        # Si los archivos se extrajeron en una subcarpeta, los mueve a la raiz
+        if [ -f "extracted_data/settings.gradle.kts" ]; then
+          cp -r extracted_data/* . 2>/dev/null || true
+          cp -r extracted_data/.[!.]* . 2>/dev/null || true
+        fi
 
     - name: Setup Java
       uses: actions/setup-java@v4
@@ -30,10 +26,21 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Build APK without prompts
+    - name: Accept Android Licenses Automatically
       run: |
-        sudo apt-get update
-        # Instalar gradle aceptando todo de golpe
-        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y gradle
-        # Aceptar licencias de Android automaticamente y compilar en modo silencioso
-        yes | gradle assembleDebug --no-daemon --quiet
+        mkdir -p $ANDROID_HOME/licenses
+        echo "24a33b3b76716ec83b8214b904d5102595450a31" > $ANDROID_HOME/licenses/android-sdk-license
+        echo "84831b9409646a918e30573bab4c9c91346d8abd" > $ANDROID_HOME/licenses/android-sdk-preview-license
+
+    - name: Build APK smoothly
+      run: |
+        sudo apt-get update && sudo apt-get install -y gradle
+        gradle assembleDebug --no-daemon --stacktrace
+
+    - name: Upload Finished APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: pulperia-apk
+        path: |
+          app/build/outputs/apk/debug/app-debug.apk
+          **/build/outputs/apk/debug/*.apk
