@@ -1,75 +1,41 @@
-plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
-}
+name: Compile Clean APK
+on:
+  push:
+    branches: [ "main", "master", "principal" ]
+  workflow_dispatch:
 
-android {
-    namespace = "com.pulperialanegrita.app"
-    compileSdk = 35
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
 
-    defaultConfig {
-        applicationId = "com.pulperialanegrita.app"
-        minSdk = 23
-        targetSdk = 35
+    - name: Unzip Clean Project Structure
+      run: |
+        sudo apt-get update && sudo apt-get install -y unzip
+        unzip -o *.zip -d project_root || true
+        cp -r project_root/PulperiaLaNegrita_Android/PulperiaLaNegrita_Android/* . 2>/dev/null || true
+        cp -r project_root/PulperiaLaNegrita_Android/PulperiaLaNegrita_Android/.[!.]* . 2>/dev/null || true
 
-        versionCode = 1
-        versionName = "1.0"
+    - name: Setup Java 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    }
+    - name: Setup Gradle 8.9
+      uses: gradle/actions/setup-gradle@v4
+      with:
+        gradle-version: '8.9'
 
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-        }
+    - name: Build Android APK
+      run: |
+        gradle clean assembleDebug --no-daemon
 
-        debug {
-            isMinifyEnabled = false
-        }
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
-    packaging {
-        resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
-        }
-    }
-}
-
-dependencies {
-
-    // AndroidX base
-    implementation("androidx.core:core-ktx:1.18.0")
-    implementation("androidx.appcompat:appcompat:1.8.0")
-    implementation("androidx.activity:activity-ktx:1.13.0")
-
-    // Material Design
-    implementation("com.google.android.material:material:1.12.0")
-
-    // ViewPager2
-    implementation("androidx.viewpager2:viewpager2:1.1.0")
-
-    // ConstraintLayout
-    implementation("androidx.constraintlayout:constraintlayout:2.2.1")
-
-    // RecyclerView
-    implementation("androidx.recyclerview:recyclerview:1.4.0")
-
-    // Tests
-    testImplementation("junit:junit:4.13.2")
-
-    androidTestImplementation("androidx.test.ext:junit:1.2.1")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
-}
+    - name: Upload Finished APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: PulperiaLaNegrita-debug
+        path: |
+          app/build/outputs/apk/debug/app-debug.apk
+          **/build/outputs/apk/debug/*.apk
