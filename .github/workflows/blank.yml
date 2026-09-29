@@ -8,13 +8,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: Free Disk Space Natively
+    - name: Free Disk Space
       run: |
         sudo rm -rf /usr/share/dotnet
         sudo rm -rf /usr/local/lib/android
         sudo rm -rf /opt/ghc
-        sudo rm -rf /usr/local/share/powershell
-        sudo rm -rf /usr/share/swift
 
     - uses: actions/checkout@v4
 
@@ -32,15 +30,10 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Build APK
+    - name: Build APK without prompts
       run: |
-        sudo apt-get update && sudo apt-get install -y gradle
-        gradle assembleDebug --no-daemon
-
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: pulperia-apk
-        path: |
-          app/build/outputs/apk/debug/app-debug.apk
-          **/build/outputs/apk/debug/*.apk
+        sudo apt-get update
+        # Instalar gradle aceptando todo de golpe
+        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y gradle
+        # Aceptar licencias de Android automaticamente y compilar en modo silencioso
+        yes | gradle assembleDebug --no-daemon --quiet
