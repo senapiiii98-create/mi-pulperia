@@ -17,21 +17,22 @@ jobs:
         cp -r project_root/PulperiaLaNegrita_Android/PulperiaLaNegrita_Android/* . 2>/dev/null || true
         cp -r project_root/PulperiaLaNegrita_Android/PulperiaLaNegrita_Android/.[!.]* . 2>/dev/null || true
         
-        # BORRADO AGRESIVO: Destruir absolutamente todos los archivos de configuracion viejos
+        # Eliminar configuraciones viejas y la interfaz dañada para inyectar las corregidas
         find . -name "build.gradle" -delete
         find . -name "build.gradle.kts" -delete
         find . -name "settings.gradle" -delete
         find . -name "settings.gradle.kts" -delete
+        find . -name "main.xml" -delete
 
     - name: Force Rewrite Universal Gradle Files
       run: |
-        # 1. Crear settings.gradle limpio en la raiz
+        # 1. Crear settings.gradle limpio
         cat << 'EOF' > settings.gradle
         rootProject.name = "PulperiaLaNegrita"
         include ':app'
         EOF
 
-        # 2. Crear build.gradle principal estable en la raiz
+        # 2. Crear build.gradle principal estable
         cat << 'EOF' > build.gradle
         buildscript {
             repositories {
@@ -40,7 +41,7 @@ jobs:
             }
             dependencies {
                 classpath "com.android.tools.build:gradle:8.2.2"
-                classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.22"
+                classpath "org.jetbrains.uuid:kotlin-gradle-plugin:1.8.22" || classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.22"
             }
         }
         allprojects {
@@ -51,7 +52,7 @@ jobs:
         }
         EOF
 
-        # 3. Crear app/build.gradle interno con el parche del escaner y compatibilidad total
+        # 3. Crear app/build.gradle interno con parches estables
         mkdir -p app
         cat << 'EOF' > app/build.gradle
         apply plugin: 'com.android.application'
@@ -66,7 +67,7 @@ jobs:
                 minSdk = 24
                 targetSdk = 34
                 versionCode = 1
-                versionName "1.0"
+                versionName = "1.0"
                 testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
             }
 
@@ -113,6 +114,56 @@ jobs:
             androidTestImplementation 'androidx.test.ext:junit:1.1.5'
             androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
         }
+        EOF
+
+    - name: Force Rewrite Layout File with Correct Space Tag
+      run: |
+        # Re-crear el archivo visual de la pantalla solucionando la etiqueta <Space> de ChatGPT
+        mkdir -p app/src/main/res/layout
+        cat << 'EOF' > app/src/main/res/layout/main.xml
+        <?xml version="1.0" encoding="utf-8"?>
+        <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+            android:orientation="vertical" android:padding="20dp"
+            android:layout_width="match_parent" android:layout_height="match_parent">
+
+            <TextView
+                android:text="🛒 Pulpería La Negrita"
+                android:textSize="26sp" android:textStyle="bold"
+                android:textColor="#1769AA"
+                android:layout_width="match_parent" android:layout_height="wrap_content"/>
+
+            <TextView
+                android:text="Sistema de ventas e inventario"
+                android:textSize="15sp" android:paddingTop="4dp"
+                android:layout_width="match_parent" android:layout_height="wrap_content"/>
+
+            <android.widget.Space android:layout_width="match_parent" android:layout_height="24dp"/>
+
+            <Button
+                android:id="@+id/scan" android:text="📷 ESCANEAR CÓDIGO DE BARRAS"
+                android:layout_width="match_parent" android:layout_height="60dp"/>
+
+            <EditText
+                android:id="@+id/code" android:hint="Código de barras"
+                android:inputType="number"
+                android:layout_width="match_parent" android:layout_height="wrap_content"/>
+
+            <TextView
+                android:id="@+id/status" android:text="Listo para escanear."
+                android:textSize="15sp" android:paddingTop="16dp"
+                android:layout_width="match_parent" android:layout_height="wrap_content"/>
+
+            <android.widget.Space android:layout_width="match_parent" android:layout_height="20dp"/>
+
+            <Button
+                android:id="@+id/demo" android:text="Abrir sistema"
+                android:layout_width="match_parent" android:layout_height="55dp"/>
+
+            <TextView
+                android:text="Versión 1.0 — lector de códigos integrado"
+                android:gravity="center" android:paddingTop="30dp"
+                android:layout_width="match_parent" android:layout_height="wrap_content"/>
+        </LinearLayout>
         EOF
 
     - name: Setup Java 17
