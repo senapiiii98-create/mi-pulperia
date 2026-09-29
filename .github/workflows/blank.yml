@@ -17,12 +17,13 @@ jobs:
         cp -r project_root/PulperiaLaNegrita_Android/PulperiaLaNegrita_Android/* . 2>/dev/null || true
         cp -r project_root/PulperiaLaNegrita_Android/PulperiaLaNegrita_Android/.[!.]* . 2>/dev/null || true
         
-        # Eliminar configuraciones viejas y la interfaz dañada
+        # Eliminar configuraciones viejas y archivos que puedan chocar
         find . -name "build.gradle" -delete
         find . -name "build.gradle.kts" -delete
         find . -name "settings.gradle" -delete
         find . -name "settings.gradle.kts" -delete
         find . -name "main.xml" -delete
+        find . -name "AndroidManifest.xml" -delete
 
     - name: Force Rewrite Universal Gradle Files
       run: |
@@ -32,7 +33,7 @@ jobs:
         include ':app'
         EOF
 
-        # 2. Crear build.gradle principal estable (CORREGIDO)
+        # 2. Crear build.gradle principal estable
         cat << 'EOF' > build.gradle
         buildscript {
             repositories {
@@ -116,53 +117,79 @@ jobs:
         }
         EOF
 
-    - name: Force Rewrite Layout File with Correct Space Tag
+    - name: Force Rewrite Layout and Style Files
       run: |
+        # Crear la interfaz visual corregida
         mkdir -p app/src/main/res/layout
         cat << 'EOF' > app/src/main/res/layout/main.xml
         <?xml version="1.0" encoding="utf-8"?>
         <LinearLayout xmlns:android="http://android.com"
             android:orientation="vertical" android:padding="20dp"
             android:layout_width="match_parent" android:layout_height="match_parent">
-
             <TextView
                 android:text="🛒 Pulpería La Negrita"
                 android:textSize="26sp" android:textStyle="bold"
                 android:textColor="#1769AA"
                 android:layout_width="match_parent" android:layout_height="wrap_content"/>
-
             <TextView
                 android:text="Sistema de ventas e inventario"
                 android:textSize="15sp" android:paddingTop="4dp"
                 android:layout_width="match_parent" android:layout_height="wrap_content"/>
-
             <android.widget.Space android:layout_width="match_parent" android:layout_height="24dp"/>
-
             <Button
                 android:id="@+id/scan" android:text="📷 ESCANEAR CÓDIGO DE BARRAS"
                 android:layout_width="match_parent" android:layout_height="60dp"/>
-
             <EditText
                 android:id="@+id/code" android:hint="Código de barras"
                 android:inputType="number"
                 android:layout_width="match_parent" android:layout_height="wrap_content"/>
-
             <TextView
                 android:id="@+id/status" android:text="Listo para escanear."
                 android:textSize="15sp" android:paddingTop="16dp"
                 android:layout_width="match_parent" android:layout_height="wrap_content"/>
-
             <android.widget.Space android:layout_width="match_parent" android:layout_height="20dp"/>
-
             <Button
                 android:id="@+id/demo" android:text="Abrir sistema"
                 android:layout_width="match_parent" android:layout_height="55dp"/>
-
             <TextView
                 android:text="Versión 1.0 — lector de códigos integrado"
                 android:gravity="center" android:paddingTop="30dp"
                 android:layout_width="match_parent" android:layout_height="wrap_content"/>
         </LinearLayout>
+        EOF
+
+        # Crear el archivo de Temas/Estilos compatible con Material Design
+        mkdir -p app/src/main/res/values
+        cat << 'EOF' > app/src/main/res/values/themes.xml
+        <resources>
+            <style name="Theme.Pulperialanegrita" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+                <item name="colorPrimary">#1769AA</item>
+                <item name="colorSecondary">#00E5FF</item>
+            </style>
+        </resources>
+        EOF
+
+        # Crear el manifiesto oficial de Android amarrando todo el sistema limpio
+        mkdir -p app/src/main
+        cat << 'EOF' > app/src/main/AndroidManifest.xml
+        <?xml version="1.0" encoding="utf-8"?>
+        <manifest xmlns:android="http://android.com">
+            <uses-permission android:name="android.permission.CAMERA" />
+            <application
+                android:allowBackup="true"
+                android:icon="@android:drawable/sym_def_app_icon"
+                android:label="Pulpería La Negrita"
+                android:theme="@style/Theme.Pulperialanegrita">
+                <activity
+                    android:name="com.pulperialanegrita.app.MainActivity"
+                    android:exported="true">
+                    <intent-filter>
+                        <action android:name="android.intent.action.MAIN" />
+                        <category android:name="android.intent.category.LAUNCHER" />
+                    </intent-filter>
+                </activity>
+            </application>
+        </manifest>
         EOF
 
     - name: Setup Java 17
