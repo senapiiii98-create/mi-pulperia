@@ -10,14 +10,20 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Unzip clean project
+    - name: Unzip and force deep structural search
       run: |
         sudo apt-get update && sudo apt-get install -y unzip
+        mkdir -p extracted_data
         unzip -o *.zip -d extracted_data || true
-        if [ -f "extracted_data/settings.gradle.kts" ]; then
-          cp -r extracted_data/* . 2>/dev/null || true
-          cp -r extracted_data/.[!.]* . 2>/dev/null || true
-        fi
+        
+        # Buscar en que subcarpeta real esta el archivo settings.gradle.kts o settings.gradle
+        REAL_PATH=$(find extracted_data -name "settings.gradle.kts" -o -name "settings.gradle" -exec dirname {} \; | head -n 1)
+        echo "The project source files are located at: $REAL_PATH"
+        
+        # Mover todo el contenido encontrado a la raiz limpia del servidor
+        cp -r $REAL_PATH/* . 2>/dev/null || true
+        cp -r $REAL_PATH/.[!.]* . 2>/dev/null || true
+        rm -rf extracted_data
 
     - name: Setup Java 17 (Required)
       uses: actions/setup-java@v4
