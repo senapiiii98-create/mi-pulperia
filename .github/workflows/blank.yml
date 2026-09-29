@@ -1,5 +1,4 @@
-name: Compilar APK Final de la Pulperia
-
+name: Compile APK
 on:
   push:
     branches: [ "main", "master", "principal" ]
@@ -9,40 +8,23 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: Descargar el codigo del repositorio
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-    - name: Instalar herramientas de descompresion
+    - name: Unzip project
       run: |
-        sudo apt-get update
-        sudo apt-get install -y unzip
-
-    - name: Descomprimir y reestructurar proyecto
-      run: |
+        sudo apt-get update && sudo apt-get install -y unzip
         unzip -o *.zip -d extracted_data
-        # Buscar en que subcarpeta real quedo el archivo settings.gradle.kts
-        REAL_PATH=$(find extracted_data -name "settings.gradle.kts" -exec dirname {} \; | head -n 1)
-        echo "El proyecto real esta en: $REAL_PATH"
-        # Mover de forma forzada todos los archivos a la raiz para que Gradle trabaje sin perderse
+        REAL_PATH=$(find extracted_data -name "settings.gradle.kts" -o -name "settings.gradle" -exec dirname {} \; | head -n 1)
         cp -r $REAL_PATH/* . 2>/dev/null || true
         cp -r $REAL_PATH/.[!.]* . 2>/dev/null || true
 
-    - name: Configurar Java JDK 17
+    - name: Setup Java
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Instalar Gradle nativo y Compilar APK
+    - name: Build APK
       run: |
-        # Como tu proyecto no tiene gradlew, usamos el comando gradle directo del sistema
-        sudo apt-get install -y gradle
-        gradle assembleDebug --no-daemon --stacktrace
-
-    - name: Guardar y empaquetar el APK resultante
-      uses: actions/upload-artifact@v4
-      with:
-        name: pulperia-apk
-        path: |
-          app/build/outputs/apk/debug/app-debug.apk
-          **/build/outputs/apk/debug/*.apk
+        sudo apt-get update && sudo apt-get install -y gradle
+        gradle assembleDebug --no-daemon
