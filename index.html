@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pulpería La Negrita</title>
+    <script src="https://unpkg.com"></script>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #121212; color: white; text-align: center; margin: 0; padding: 20px; }
+        h1 { color: #4CAF50; font-size: 28px; margin-bottom: 5px; }
+        .menu-btn { display: block; width: 100%; max-width: 340px; margin: 15px auto; padding: 22px; font-size: 20px; font-weight: bold; border: none; border-radius: 12px; cursor: pointer; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); width: 100%; }
+        .btn-cobrar { background-color: #2e7d32; }
+        .btn-inventario { background-color: #1565c0; }
+        .btn-agregar { background-color: #f57c00; }
+        .btn-precio { background-color: #424242; }
+        .screen { display: none; max-width: 400px; margin: auto; background: #1e1e1e; padding: 20px; border-radius: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .active { display: block !important; }
+        .btn-back { background: #c62828; padding: 12px; font-size: 16px; border: none; border-radius: 8px; color: white; width: 100%; margin-top: 15px; font-weight: bold; cursor: pointer; }
+        .product-item { background: #2a2a2a; margin: 10px 0; padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 18px; text-align: left; }
+        .badge { background: #4CAF50; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
+        input, select { width: 90%; padding: 12px; margin: 10px 0; font-size: 16px; border-radius: 6px; border: 1px solid #444; background: #333; color: white; }
+        .vuelto-box { background: #2e7d32; padding: 15px; border-radius: 8px; font-size: 24px; font-weight: bold; margin-top: 15px; display: none; }
+        #reader-cobrar, #reader-agregar, #reader-precio { width: 100%; background: black; border-radius: 8px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div id="screen-home" class="screen active">
+        <h1>🏪 Pulpería La Negrita</h1>
+        <p style="color: #aaa; margin-top: 0;">Punto de Venta e Inventario</p>
+        <button class="menu-btn btn-cobrar" onclick="showScreen('screen-cobrar')">🛒 COBRAR VENTA</button>
+        <button class="menu-btn btn-inventario" onclick="showScreen('screen-inventario'); renderInventario();">📦 VER INVENTARIO</button>
+        <button class="menu-btn btn-agregar" onclick="showScreen('screen-agregar')">➕ NUEVO PRODUCTO</button>
+        <button class="menu-btn btn-precio" onclick="showScreen('screen-precio'); startScanner('reader-precio');">🔍 CONSULTAR PRECIO</button>
+    </div>
+
+    <div id="screen-cobrar" class="screen">
+        <h2>🛒 Caja de Cobro</h2>
+        <button class="menu-btn btn-cobrar" style="padding:12px; font-size:16px; width:90%;" onclick="startScanner('reader-cobrar')">📸 Activar Escáner Cámara</button>
+        <div id="reader-cobrar"></div>
+        <select id="select-producto" onchange="agregarAlCarrito(this.value)">
+            <option value="">-- O Buscar por Nombre --</option>
+        </select>
+        <div id="carrito-lista" style="margin: 15px 0; text-align: left; max-height: 150px; overflow-y: auto;"></div>
+        <h3 style="font-size: 24px; color: #ffeb3b;">Total: HNL <span id="total-cuenta">0.00</span></h3>
+        <input type="number" id="pago-cliente" placeholder="¿Con cuánto dinero pagan?" oninput="calcularVuelto()">
+        <div id="vuelto-resultado" class="vuelto-box">Vuelto: HNL 0.00</div>
+        <button class="menu-btn btn-cobrar" style="background:#2e7d32; width:100%; margin:15px 0 0 0;" onclick="completarVenta()">COMPLETAR VENTA</button>
+        <button class="btn-back" onclick="cancelarVenta()">❌ CANCELAR COMPRA</button>
+    </div>
+
+    <div id="screen-inventario" class="screen">
+        <h2>📦 Mi Inventario</h2>
+        <div id="inventario-lista" style="max-height: 350px; overflow-y: auto;"></div>
+        <button class="btn-back" style="background:#424242;" onclick="showScreen('screen-home')">⬅️ Regresar al Menú</button>
+    </div>
+
+    <div id="screen-agregar" class="screen">
+        <h2>➕ Alta de Producto</h2>
+        <input type="text" id="add-codigo" placeholder="Código de barras (opcional)">
+        <button class="menu-btn btn-precio" style="padding:10px; font-size:14px; margin:5px auto; width:90%;" onclick="startScanner('reader-agregar')">📸 Escanear Código</button>
+        <div id="reader-agregar"></div>
+        <input type="text" id="add-nombre" placeholder="Nombre del Producto">
+        <input type="number" id="add-precio" placeholder="Precio de Venta (HNL)">
+        <input type="number" id="add-stock" placeholder="Cantidad Inicial en Estante">
+        <button class="menu-btn btn-cobrar" style="width:100%; margin-top:15px;" onclick="guardarProducto()">GUARDAR EN SISTEMA</button>
+        <button class="btn-back" onclick="stopScanner(); showScreen('screen-home')">⬅️ Cancelar</button>
+    </div>
+
+    <div id="screen-precio" class="screen">
+        <h2>🔍 Buscador de Precios</h2>
+        <div id="reader-precio"></div>
+        <div id="precio-gigante" style="font-size: 32px; font-weight: bold; margin: 30px 0; color: #ffeb3b; min-height: 80px;">Apunte al código con la cámara...</div>
+        <button class="btn-back" style="background:#424242;" onclick="stopScanner(); showScreen('screen-home')">⬅️ Regresar al Menú</button>
+    </div>
+
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playBip() {
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.type = "sine";
+            oscillator.frequency.value = 1000; 
+            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.1);
+        }
+
+        let inventario = [
+            { id: "7501055312345", nombre: "Coca Cola 1.5L", precio: 48, stock: 24 },
+            { id: "7501000123456", nombre: "Coca Cola 1L", precio: 38, stock: 24 },
+            { id: "7401002345678", nombre: "Pepsi 1L", precio: 29, stock: 24 },
+            { id: "7401000001111", nombre: "Leche Semidescremada 1L", precio: 39, stock: 24 },
+            { id: "INT-001", nombre: "Agua (Bolsa/Botella)", precio: 2, stock: 24 }
+        ];
+        let carrito = [];
+        let html5QrCode = null;
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+            actualizarSelect();
+        }
+
+        function renderInventario() {
+            let container = document.getElementById('inventario-lista');
+            container.innerHTML = "";
+            inventario.forEach(p => {
+                container.innerHTML += `<div class="product-item"><span><b>${p.nombre}</b><br><small style="color:#aaa;">Precio: HNL ${p.precio.toFixed(2)}</small></span><span class="badge">${p.stock} uds</span></div>`;
+            });
+        }
+
+        function actualizarSelect() {
+            let select = document.getElementById('select-producto');
+            select.innerHTML = '<option value="">-- O Buscar por Nombre --</option>';
+            inventario.forEach(p => {
+                select.innerHTML += `<option value="${p.id}">${p.nombre} (HNL ${p.precio})</option>`;
+            });
+        }
+
+        function agregarAlCarrito(id) {
+            if(!id) return;
+            let prod = inventario.find(p => p.id === id);
+            if(prod) {
+                carrito.push(prod);
+                renderCarrito();
+            } else {
+                alert("Código no registrado.");
+            }
+            document.getElementById('select-producto').value = "";
+        }
+
+        function renderCarrito() {
+            let container = document.getElementById('carrito-lista');
+            let totalSpan = document.getElementById('total-cuenta');
+            container.innerHTML = "";
+            let total = 0;
+            carrito.forEach((p) => {
+                total += p.precio;
+                container.innerHTML += `<div style="padding:8px 0; border-bottom:1px solid #333; font-size:16px;">✔️ 1x ${p.nombre} - HNL ${p.precio.toFixed(2)}</div>`;
+            });
+            totalSpan.innerText = total.toFixed(2);
+            calcularVuelto();
+        }
+
+        function calcularVuelto() {
+            let total = parseFloat(document.getElementById('total-cuenta').innerText);
+            let pago = parseFloat(document.getElementById('pago-cliente').value);
+            let box = document.getElementById('vuelto-resultado');
+            if(pago >= total && total > 0) {
+                box.innerText = `Dar Vuelto: HNL ${(pago - total).toFixed(2)}`;
+                box.style.display = "block";
+            } else {
+                box.style.display = "none";
+            }
+        }
+
+        function completarVenta() {
+            if(carrito.length === 0) return alert("El carrito está vacío.");
+            carrito.forEach(item => {
+                let p = inventario.find(prod => prod.id === item.id);
+                if(p && p.stock > 0) p.stock--;
+            });
+            alert("¡Venta completada! Inventario descontado.");
+            cancelarVenta();
+        }
+
+        function cancelarVenta() {
+            carrito = [];
+            document.getElementById('pago-cliente').value = "";
+            renderCarrito();
+            stopScanner();
+            showScreen('screen-home');
+        }
+
+        function guardarProducto() {
+            let cod = document.getElementById('add-codigo').value || 'INT-' + Math.floor(Math.random() * 10000);
